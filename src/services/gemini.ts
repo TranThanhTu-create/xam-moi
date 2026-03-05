@@ -1,37 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 
-declare global {
-  interface Window {
-    aistudio?: {
-      hasSelectedApiKey: () => Promise<boolean>;
-      openSelectKey: () => Promise<void>;
-    };
-  }
-}
-
-/* ================= API KEY ================= */
-
-const API_KEY = "AIzaSyB5mjBgHyfyvLotgjx2kz7YjgUF8cu0WYQ";
-
-export const getAI = () => new GoogleGenAI({
-  apiKey: API_KEY
+const ai = new GoogleGenAI({
+  apiKey: "AIzaSyB5mjBgHyfyvLotgjx2kz7YjgUF8cu0WYQ"
 });
-
-/* ================= ENSURE KEY ================= */
-
-export async function ensureApiKey() {
-
-  if (typeof window !== "undefined" && window.aistudio) {
-
-    const hasKey = await window.aistudio.hasSelectedApiKey();
-
-    if (!hasKey) {
-      await window.aistudio.openSelectKey();
-    }
-
-  }
-
-}
 
 /* ================= ANALYZE IMAGE ================= */
 
@@ -39,21 +10,14 @@ export async function analyzeImage(base64Image: string) {
 
   try {
 
-    await ensureApiKey();
-
-    const ai = getAI();
-
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
     const prompt = `
 Bạn là chuyên gia thẩm mỹ môi.
 
-1. Phân tích tình trạng môi
-2. Liệt kê các vấn đề môi
-3. Đưa ra đánh giá ngắn gọn
-4. Đề xuất giải pháp xăm môi
+Phân tích tình trạng môi trong ảnh.
 
-Trả về JSON:
+Trả JSON:
 
 {
  "analysis":"",
@@ -90,23 +54,11 @@ Trả về JSON:
       .replace(/```/g, "")
       .trim();
 
-    try {
-
-      return JSON.parse(clean);
-
-    } catch {
-
-      return {
-        analysis: clean,
-        issues: [],
-        recommendation: ""
-      };
-
-    }
+    return JSON.parse(clean);
 
   } catch (error) {
 
-    console.error("AI analyze error:", error);
+    console.error("Analyze error:", error);
 
     return {
       analysis: "Không thể phân tích hình ảnh. Vui lòng thử lại.",
@@ -118,6 +70,7 @@ Trả về JSON:
 
 }
 
+
 /* ================= SIMULATE LIP TATTOO ================= */
 
 export async function simulateLipTattoo(
@@ -128,15 +81,11 @@ export async function simulateLipTattoo(
 
   try {
 
-    await ensureApiKey();
-
-    const ai = getAI();
-
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
     const prompt = `
 Apply a realistic lip tattoo color ${color} with style ${description}.
-Focus on lips and keep the face natural.
+Focus only on lips.
 Photorealistic result.
 `;
 
@@ -177,25 +126,20 @@ Photorealistic result.
 
   } catch (error) {
 
-    console.error("AI tattoo error:", error);
+    console.error("Tattoo error:", error);
+
     throw new Error("No image generated");
 
   }
 
 }
 
+
 /* ================= GENERATE IMAGE ================= */
 
-export async function generateLipImage(
-  prompt: string,
-  size: "1K" | "2K" | "4K" = "1K"
-) {
+export async function generateLipImage(prompt: string) {
 
   try {
-
-    await ensureApiKey();
-
-    const ai = getAI();
 
     const response = await ai.models.generateContent({
 
@@ -206,14 +150,7 @@ export async function generateLipImage(
           role: "user",
           parts: [{ text: prompt }]
         }
-      ],
-
-      config: {
-        imageConfig: {
-          imageSize: size,
-          aspectRatio: "1:1"
-        }
-      }
+      ]
 
     });
 
@@ -233,7 +170,8 @@ export async function generateLipImage(
 
   } catch (error) {
 
-    console.error("AI image error:", error);
+    console.error("Generate error:", error);
+
     throw new Error("No image generated");
 
   }
