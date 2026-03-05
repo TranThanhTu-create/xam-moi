@@ -22,62 +22,62 @@ const API_KEY = "AIzaSyB5mjBgHyfyvLotgjx2kz7YjgUF8cu0WYQ";
 
 export const getAI = () => new GoogleGenAI({ apiKey: API_KEY });
 
+/* ================= ANALYZE IMAGE ================= */
+
 export async function analyzeImage(base64Image: string) {
-  try {
-    await ensureApiKey();
 
-    const ai = getAI();
-    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  await ensureApiKey();
 
-    const model = "gemini-2.5-flash";
+  const ai = getAI();
 
-    const prompt = `
-Bạn là chuyên gia thẩm mỹ về môi. Hãy phân tích hình ảnh môi này của khách hàng.
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
-1. Xác định vùng môi
-2. Phân tích các vấn đề: thâm, nhạt màu, khô, không đều màu
-3. Đưa ra đánh giá ngắn gọn (3-4 câu)
-4. Đề xuất giải pháp xăm môi phù hợp
+  const prompt = `
+Bạn là chuyên gia thẩm mỹ môi.
 
-Trả về JSON:
+1. Phân tích tình trạng môi
+2. Liệt kê các vấn đề môi
+3. Đưa ra đánh giá ngắn gọn
+4. Đề xuất giải pháp xăm môi
+
+Trả JSON:
 
 {
- "analysis": "Đánh giá chi tiết",
- "issues": ["Thâm viền","Khô"],
- "recommendation": "Đề xuất"
+ "analysis":"",
+ "issues":[],
+ "recommendation":""
 }
 `;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: prompt }
-        ]
-      }
-    });
+  const response = await ai.models.generateContent({
 
-    const text = response.text || "{}";
+    model: "gemini-3.1-flash-image-preview",
 
-    const clean = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    contents: {
+      parts: [
+        { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+        { text: prompt }
+      ]
+    },
 
-    return JSON.parse(clean);
+    config: {
+      responseMimeType: "application/json"
+    }
 
-  } catch (error) {
+  });
 
-    console.error("AI analyze error:", error);
+  const text = response.text || "{}";
 
-    return {
-      analysis: "Không thể phân tích hình ảnh. Vui lòng thử lại.",
-      issues: [],
-      recommendation: ""
-    };
-  }
+  const clean = text
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+  return JSON.parse(clean);
+
 }
+
+/* ================= SIMULATE LIP TATTOO ================= */
 
 export async function simulateLipTattoo(
   base64Image: string,
@@ -85,81 +85,87 @@ export async function simulateLipTattoo(
   description: string
 ) {
 
-  try {
+  await ensureApiKey();
 
-    await ensureApiKey();
+  const ai = getAI();
 
-    const ai = getAI();
-    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
-    // MODEL TẠO ẢNH
-    const model = "gemini-2.0-flash-exp-image-generation";
+  const prompt = `Apply a realistic lip tattoo color ${color} with style ${description}. Focus on lips and keep the rest of the face natural. Photorealistic.`;
 
-    const prompt = `Apply a realistic lip tattoo color (${color}) with style ${description}. Keep the face natural, focus on lips, photorealistic result.`;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: prompt }
-        ]
-      }
-    });
+  const response = await ai.models.generateContent({
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
+    model: "gemini-3.1-flash-image-preview",
 
-      if (part.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
+    contents: {
+      parts: [
+        { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+        { text: prompt }
+      ]
+    }
+
+  });
+
+
+  const parts = response.candidates?.[0]?.content?.parts || [];
+
+  for (const part of parts) {
+
+    if (part.inlineData) {
+
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
 
     }
 
-    throw new Error("No image generated");
-
-  } catch (error) {
-
-    console.error("AI tattoo error:", error);
-    throw new Error("No image generated");
-
   }
+
+  throw new Error("No image generated");
+
 }
+
+
+/* ================= GENERATE IMAGE ================= */
 
 export async function generateLipImage(
   prompt: string,
   size: "1K" | "2K" | "4K" = "1K"
 ) {
 
-  try {
+  await ensureApiKey();
 
-    await ensureApiKey();
+  const ai = getAI();
 
-    const ai = getAI();
+  const response = await ai.models.generateContent({
 
-    // MODEL TẠO ẢNH
-    const model = "gemini-2.0-flash-exp-image-generation";
+    model: "gemini-3-pro-image-preview",
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
-        parts: [{ text: prompt }]
+    contents: {
+      parts: [{ text: prompt }]
+    },
+
+    config: {
+      imageConfig: {
+        imageSize: size,
+        aspectRatio: "1:1"
       }
-    });
+    }
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
+  });
 
-      if (part.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
+
+  const parts = response.candidates?.[0]?.content?.parts || [];
+
+  for (const part of parts) {
+
+    if (part.inlineData) {
+
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
 
     }
 
-    throw new Error("No image generated");
-
-  } catch (error) {
-
-    console.error("AI image error:", error);
-    throw new Error("No image generated");
-
   }
+
+  throw new Error("No image generated");
+
 }
