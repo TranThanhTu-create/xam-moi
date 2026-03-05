@@ -27,7 +27,6 @@ export async function analyzeImage(base64Image: string) {
     await ensureApiKey();
 
     const ai = getAI();
-
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
     const model = "gemini-2.5-flash";
@@ -54,9 +53,9 @@ Trả về JSON:
       contents: {
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: prompt },
-        ],
-      },
+          { text: prompt }
+        ]
+      }
     });
 
     const text = response.text || "{}";
@@ -67,13 +66,15 @@ Trả về JSON:
       .trim();
 
     return JSON.parse(clean);
+
   } catch (error) {
+
     console.error("AI analyze error:", error);
 
     return {
       analysis: "Không thể phân tích hình ảnh. Vui lòng thử lại.",
       issues: [],
-      recommendation: "",
+      recommendation: ""
     };
   }
 }
@@ -83,37 +84,44 @@ export async function simulateLipTattoo(
   color: string,
   description: string
 ) {
+
   try {
+
     await ensureApiKey();
 
     const ai = getAI();
-
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
-    const model = "gemini-2.5-flash";
+    // MODEL TẠO ẢNH
+    const model = "gemini-2.0-flash-exp-image-generation";
 
-    const prompt = `Apply a ${description} (${color}) lipstick or tattoo effect to the lips in this image. Keep the face natural. High quality, realistic texture.`;
+    const prompt = `Apply a realistic lip tattoo color (${color}) with style ${description}. Keep the face natural, focus on lips, photorealistic result.`;
 
     const response = await ai.models.generateContent({
       model: model,
       contents: {
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: prompt },
-        ],
-      },
+          { text: prompt }
+        ]
+      }
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
+
       if (part.inlineData) {
         return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
       }
+
     }
 
     throw new Error("No image generated");
+
   } catch (error) {
+
     console.error("AI tattoo error:", error);
     throw new Error("No image generated");
+
   }
 }
 
@@ -121,29 +129,37 @@ export async function generateLipImage(
   prompt: string,
   size: "1K" | "2K" | "4K" = "1K"
 ) {
+
   try {
+
     await ensureApiKey();
 
     const ai = getAI();
 
-    const model = "gemini-2.5-flash";
+    // MODEL TẠO ẢNH
+    const model = "gemini-2.0-flash-exp-image-generation";
 
     const response = await ai.models.generateContent({
       model: model,
       contents: {
-        parts: [{ text: prompt }],
-      },
+        parts: [{ text: prompt }]
+      }
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
+
       if (part.inlineData) {
         return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
       }
+
     }
 
     throw new Error("No image generated");
+
   } catch (error) {
+
     console.error("AI image error:", error);
     throw new Error("No image generated");
+
   }
 }
