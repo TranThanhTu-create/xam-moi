@@ -26,13 +26,15 @@ export const getAI = () => new GoogleGenAI({ apiKey: API_KEY });
 
 export async function analyzeImage(base64Image: string) {
 
-  await ensureApiKey();
+  try {
 
-  const ai = getAI();
+    await ensureApiKey();
 
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+    const ai = getAI();
 
-  const prompt = `
+    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+
+    const prompt = `
 Bạn là chuyên gia thẩm mỹ môi.
 
 1. Phân tích tình trạng môi
@@ -49,31 +51,55 @@ Trả JSON:
 }
 `;
 
-  const response = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
 
-    model: "gemini-3.1-flash-image-preview",
+      model: "gemini-3.1-flash-image-preview",
 
-    contents: {
-      parts: [
-        { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-        { text: prompt }
-      ]
-    },
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+          { text: prompt }
+        ]
+      },
 
-    config: {
-      responseMimeType: "application/json"
+      config: {
+        responseMimeType: "application/json"
+      }
+
+    });
+
+    const text = response.text || "{}";
+
+    const clean = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    try {
+
+      return JSON.parse(clean);
+
+    } catch {
+
+      return {
+        analysis: clean,
+        issues: [],
+        recommendation: ""
+      };
+
     }
 
-  });
+  } catch (error) {
 
-  const text = response.text || "{}";
+    console.error("AI analyze error:", error);
 
-  const clean = text
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+    return {
+      analysis: "Không thể phân tích hình ảnh. Vui lòng thử lại.",
+      issues: [],
+      recommendation: ""
+    };
 
-  return JSON.parse(clean);
+  }
 
 }
 
@@ -85,42 +111,49 @@ export async function simulateLipTattoo(
   description: string
 ) {
 
-  await ensureApiKey();
+  try {
 
-  const ai = getAI();
+    await ensureApiKey();
 
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+    const ai = getAI();
 
-  const prompt = `Apply a realistic lip tattoo color ${color} with style ${description}. Focus on lips and keep the rest of the face natural. Photorealistic.`;
+    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
+    const prompt = `Apply a realistic lip tattoo color ${color} with style ${description}. Focus on lips and keep the rest of the face natural. Photorealistic.`;
 
-  const response = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
 
-    model: "gemini-3.1-flash-image-preview",
+      model: "gemini-3.1-flash-image-preview",
 
-    contents: {
-      parts: [
-        { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-        { text: prompt }
-      ]
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+          { text: prompt }
+        ]
+      }
+
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts || [];
+
+    for (const part of parts) {
+
+      if (part.inlineData) {
+
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+
+      }
+
     }
 
-  });
+    throw new Error("No image generated");
 
+  } catch (error) {
 
-  const parts = response.candidates?.[0]?.content?.parts || [];
-
-  for (const part of parts) {
-
-    if (part.inlineData) {
-
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-
-    }
+    console.error("AI tattoo error:", error);
+    throw new Error("No image generated");
 
   }
-
-  throw new Error("No image generated");
 
 }
 
@@ -132,40 +165,48 @@ export async function generateLipImage(
   size: "1K" | "2K" | "4K" = "1K"
 ) {
 
-  await ensureApiKey();
+  try {
 
-  const ai = getAI();
+    await ensureApiKey();
 
-  const response = await ai.models.generateContent({
+    const ai = getAI();
 
-    model: "gemini-3-pro-image-preview",
+    const response = await ai.models.generateContent({
 
-    contents: {
-      parts: [{ text: prompt }]
-    },
+      model: "gemini-3-pro-image-preview",
 
-    config: {
-      imageConfig: {
-        imageSize: size,
-        aspectRatio: "1:1"
+      contents: {
+        parts: [{ text: prompt }]
+      },
+
+      config: {
+        imageConfig: {
+          imageSize: size,
+          aspectRatio: "1:1"
+        }
       }
+
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts || [];
+
+    for (const part of parts) {
+
+      if (part.inlineData) {
+
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+
+      }
+
     }
 
-  });
+    throw new Error("No image generated");
 
+  } catch (error) {
 
-  const parts = response.candidates?.[0]?.content?.parts || [];
-
-  for (const part of parts) {
-
-    if (part.inlineData) {
-
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-
-    }
+    console.error("AI image error:", error);
+    throw new Error("No image generated");
 
   }
-
-  throw new Error("No image generated");
 
 }
