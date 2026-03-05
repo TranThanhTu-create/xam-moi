@@ -9,18 +9,29 @@ declare global {
   }
 }
 
-export async function ensureApiKey() {
-  if (typeof window !== "undefined" && window.aistudio) {
-    const hasKey = await window.aistudio.hasSelectedApiKey();
-    if (!hasKey) {
-      await window.aistudio.openSelectKey();
-    }
-  }
-}
+/* ================= API KEY ================= */
 
 const API_KEY = "AIzaSyB5mjBgHyfyvLotgjx2kz7YjgUF8cu0WYQ";
 
-export const getAI = () => new GoogleGenAI({ apiKey: API_KEY });
+export const getAI = () => new GoogleGenAI({
+  apiKey: API_KEY
+});
+
+/* ================= ENSURE KEY ================= */
+
+export async function ensureApiKey() {
+
+  if (typeof window !== "undefined" && window.aistudio) {
+
+    const hasKey = await window.aistudio.hasSelectedApiKey();
+
+    if (!hasKey) {
+      await window.aistudio.openSelectKey();
+    }
+
+  }
+
+}
 
 /* ================= ANALYZE IMAGE ================= */
 
@@ -42,7 +53,7 @@ Bạn là chuyên gia thẩm mỹ môi.
 3. Đưa ra đánh giá ngắn gọn
 4. Đề xuất giải pháp xăm môi
 
-Trả JSON:
+Trả về JSON:
 
 {
  "analysis":"",
@@ -55,16 +66,20 @@ Trả JSON:
 
       model: "gemini-3.1-flash-image-preview",
 
-      contents: {
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: prompt }
-        ]
-      },
-
-      config: {
-        responseMimeType: "application/json"
-      }
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: base64Data
+              }
+            }
+          ]
+        }
+      ]
 
     });
 
@@ -119,18 +134,30 @@ export async function simulateLipTattoo(
 
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
-    const prompt = `Apply a realistic lip tattoo color ${color} with style ${description}. Focus on lips and keep the rest of the face natural. Photorealistic.`;
+    const prompt = `
+Apply a realistic lip tattoo color ${color} with style ${description}.
+Focus on lips and keep the face natural.
+Photorealistic result.
+`;
 
     const response = await ai.models.generateContent({
 
       model: "gemini-3.1-flash-image-preview",
 
-      contents: {
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: prompt }
-        ]
-      }
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: base64Data
+              }
+            }
+          ]
+        }
+      ]
 
     });
 
@@ -157,7 +184,6 @@ export async function simulateLipTattoo(
 
 }
 
-
 /* ================= GENERATE IMAGE ================= */
 
 export async function generateLipImage(
@@ -175,9 +201,12 @@ export async function generateLipImage(
 
       model: "gemini-3-pro-image-preview",
 
-      contents: {
-        parts: [{ text: prompt }]
-      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
 
       config: {
         imageConfig: {
